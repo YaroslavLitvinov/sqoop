@@ -21,11 +21,13 @@ import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.sql.Blob;
 
 import org.apache.log4j.Logger;
 import org.apache.sqoop.common.SqoopException;
 import org.apache.sqoop.connector.jdbc.configuration.FromJobConfiguration;
 import org.apache.sqoop.connector.jdbc.configuration.LinkConfiguration;
+import org.apache.sqoop.connector.jdbc.util.SqlTypesUtils;
 import org.apache.sqoop.error.code.GenericJdbcConnectorError;
 import org.apache.sqoop.job.etl.Extractor;
 import org.apache.sqoop.job.etl.ExtractorContext;
@@ -71,21 +73,37 @@ public class GenericJdbcExtractor extends Extractor<LinkConfiguration, FromJobCo
           // check type of the column
           Column schemaColumn = schemaColumns[i];
           switch (schemaColumn.getType()) {
-          case DATE:
-            // convert the sql date to JODA time as prescribed the Sqoop IDF spec
-            array[i] = LocalDate.fromDateFields((java.sql.Date)resultSet.getObject(i + 1));
-            break;
-          case DATE_TIME:
-            // convert the sql date time to JODA time as prescribed the Sqoop IDF spec
-            array[i] = LocalDateTime.fromDateFields((java.sql.Timestamp)resultSet.getObject(i + 1));
-            break;
-          case TIME:
-            // convert the sql time to JODA time as prescribed the Sqoop IDF spec
-            array[i] = LocalTime.fromDateFields((java.sql.Time)resultSet.getObject(i + 1));
-            break;
-          default:
-            //for anything else
-            array[i] = resultSet.getObject(i + 1);
+            case DATE:
+              // convert the sql date to JODA time as prescribed the Sqoop IDF spec
+              array[i] = LocalDate.fromDateFields((java.sql.Date)resultSet.getObject(i + 1));
+              break;
+            case DATE_TIME:
+              // convert the sql date time to JODA time as prescribed the Sqoop IDF spec
+              array[i] = LocalDateTime.fromDateFields((java.sql.Timestamp)resultSet.getObject(i + 1));
+              break;
+            case TIME:
+              // convert the sql time to JODA time as prescribed the Sqoop IDF spec
+              array[i] = LocalTime.fromDateFields((java.sql.Time)resultSet.getObject(i + 1));
+              break;
+            case ARRAY:
+              // use getArray() to get Object[] from java.sql.Array data type
+              java.sql.Array objArray = (java.sql.Array) resultSet.getObject(i + 1);
+              ResultSetMetaData arrayMeta = objArray.getResultSet().getMetaData();
+              if (arrayMeta.getColumnCount() > 0)
+                schemaColumns[i] = SqlTypesUtils.sqlTypeToSchemaType(arrayMeta.getColumnType(1), schemaColumn.getName(),
+                    arrayMeta.getPrecision(1), arrayMeta.getScale(1));
+              array[i] = objArray.getArray();
+              break;
+            case BINARY:
+              array[i] = resultSet.getObject(i + 1);
+              // use getBytes() to get byte[] from java.sql.Blob data type
+              if (array[i] instanceof Blob) {
+                Blob blob = (Blob) array[i];
+                array[i] = blob.getBytes(1, (int) blob.length());
+              }
+            default:
+              //for anything else
+              array[i] = resultSet.getObject(i + 1);
 
           }
         }

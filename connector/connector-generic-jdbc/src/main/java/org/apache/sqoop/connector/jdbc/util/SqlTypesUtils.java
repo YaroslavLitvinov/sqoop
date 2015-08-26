@@ -27,6 +27,7 @@ import org.apache.sqoop.schema.type.FixedPoint;
 import org.apache.sqoop.schema.type.FloatingPoint;
 import org.apache.sqoop.schema.type.Text;
 import org.apache.sqoop.schema.type.Time;
+import org.apache.sqoop.schema.type.Array;
 import org.apache.sqoop.schema.type.Unknown;
 
 import java.sql.Types;
@@ -93,6 +94,9 @@ public class SqlTypesUtils {
       case Types.BLOB:
       case Types.LONGVARBINARY:
         return new Binary(columnName);
+
+      case Types.ARRAY:
+        return new Array(columnName, new Bit(columnName));
 
       default:
         return new Unknown(columnName,(long)sqlType);

@@ -88,10 +88,6 @@ public class GenericJdbcExtractor extends Extractor<LinkConfiguration, FromJobCo
             case ARRAY:
               // use getArray() to get Object[] from java.sql.Array data type
               java.sql.Array objArray = (java.sql.Array) resultSet.getObject(i + 1);
-              ResultSetMetaData arrayMeta = objArray.getResultSet().getMetaData();
-              if (arrayMeta.getColumnCount() > 0)
-                schemaColumns[i] = SqlTypesUtils.sqlTypeToSchemaType(arrayMeta.getColumnType(1), schemaColumn.getName(),
-                    arrayMeta.getPrecision(1), arrayMeta.getScale(1));
               array[i] = objArray.getArray();
               break;
             case BINARY:

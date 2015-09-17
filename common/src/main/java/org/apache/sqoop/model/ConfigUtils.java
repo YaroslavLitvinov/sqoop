@@ -27,6 +27,7 @@ import org.apache.sqoop.utils.ClassUtils;
 import org.apache.sqoop.validation.ConfigValidationRunner;
 import org.apache.sqoop.validation.Message;
 import org.apache.sqoop.validation.ConfigValidationResult;
+import org.joda.time.DateTime;
 import org.json.simple.JSONObject;
 
 import java.lang.reflect.Field;
@@ -167,6 +168,10 @@ public class  ConfigUtils {
         } else if (type.isEnum()) {
           input = new MEnumInput(inputName, sensitive, editable, overrides,
               ClassUtils.getEnumStrings(type));
+        } else if (type.isAssignableFrom(List.class)) {
+          input = new MListInput(inputName, sensitive, editable, overrides);
+        } else if (type == DateTime.class) {
+          input = new MDateTimeInput(inputName, sensitive, editable, overrides);
         } else {
           throw new SqoopException(ModelError.MODEL_004, "Unsupported type "
               + type.getName() + " for input " + fieldName);
@@ -448,7 +453,11 @@ public class  ConfigUtils {
             jsonConfig.put(inputName, value.toString());
           } else if(type == Boolean.class) {
             jsonConfig.put(inputName, value);
-          }else {
+          } else if (type.isAssignableFrom(List.class)) {
+            jsonConfig.put(inputName, value);
+          } else if (type.isAssignableFrom(DateTime.class) ) {
+            jsonConfig.put(inputName, ((DateTime) value).getMillis());
+          } else {
             throw new SqoopException(ModelError.MODEL_004,
               "Unsupported type " + type.getName() + " for input " + configName + "." + inputName);
           }
@@ -543,7 +552,11 @@ public class  ConfigUtils {
             inputField.set(configValue, Enum.valueOf((Class<? extends Enum>) inputField.getType(), (String) jsonInputs.get(inputName)));
           } else if(type == Boolean.class) {
             inputField.set(configValue, (Boolean) jsonInputs.get(inputName));
-          }else {
+          } else if (type.isAssignableFrom(List.class)) {
+            inputField.set(configValue, (List)jsonInputs.get(inputName));
+          } else if (type.isAssignableFrom(DateTime.class)) {
+            inputField.set(configValue, new DateTime((long)jsonInputs.get(inputName)));
+          } else {
             throw new SqoopException(ModelError.MODEL_004,
               "Unsupported type " + type.getName() + " for input " + configName + "." + inputName);
           }

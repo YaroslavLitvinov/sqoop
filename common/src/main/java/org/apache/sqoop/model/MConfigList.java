@@ -89,6 +89,14 @@ public class MConfigList implements MClonable {
     return (MBooleanInput) getInput(name);
   }
 
+  public MListInput getListInput(String name) {
+    return (MListInput) getInput(name);
+  }
+
+  public MDateTimeInput getDateTimeInput(String name) {
+    return (MDateTimeInput) getInput(name);
+  }
+
   @Override
   public boolean equals(Object o) {
     if (this == o) {

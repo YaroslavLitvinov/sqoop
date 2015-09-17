@@ -34,6 +34,7 @@ import org.apache.sqoop.server.common.ServerError;
  * Get server version and supported protocol versions.
  */
 public class VersionRequestHandler implements RequestHandler {
+  private static final long serialVersionUID = 1L;
 
   private static final Logger LOG =
       Logger.getLogger(VersionRequestHandler.class);
@@ -54,11 +55,6 @@ public class VersionRequestHandler implements RequestHandler {
 
   @Override
   public JsonBean handleEvent(RequestContext ctx) {
-    // version only support GET requests
-    if (ctx.getMethod() != Method.GET) {
-      throw new SqoopException(ServerError.SERVER_0002, "Unsupported HTTP method for version:"
-          + ctx.getMethod());
-    }
     AuditLoggerManager.getInstance()
         .logAuditEvent(ctx.getUserName(), ctx.getRequest().getRemoteAddr(),
         "show", "version", "");

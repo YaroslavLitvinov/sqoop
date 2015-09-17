@@ -38,7 +38,7 @@ public class HandlerUtils {
       jobId = job.getPersistenceId();
     } else {
       try {
-        jobId = Long.valueOf(identifier);
+        jobId = Long.parseLong(identifier);
       } catch (NumberFormatException ex) {
         // this means name nor Id existed and we want to throw a user friendly
         // message than a number format exception
@@ -47,6 +47,33 @@ public class HandlerUtils {
       }
     }
     return jobId;
+  }
+
+  public static String getJobNameFromIdentifier(String identifier) {
+    // support jobName or jobId for the api
+    // NOTE: jobId is a fallback for older sqoop clients if any, since we want
+    // to primarily use unique jobNames
+    Repository repository = RepositoryManager.getInstance().getRepository();
+    MJob job = repository.findJob(identifier);
+    if (job == null) {
+      long jobId;
+      try {
+        jobId = Long.parseLong(identifier);
+      } catch (NumberFormatException ex) {
+        // this means name nor Id existed and we want to throw a user friendly
+        // message than a number format exception
+        throw new SqoopException(ServerError.SERVER_0005, "Invalid job: " + identifier
+            + " requested");
+      }
+
+      job = repository.findJob(jobId);
+      if (job == null) {
+        throw new SqoopException(ServerError.SERVER_0006, "Job: " + identifier
+            + " doesn't exist");
+      }
+    }
+
+    return job.getName();
   }
 
   public static long getLinkIdFromIdentifier(String identifier) {
@@ -60,7 +87,7 @@ public class HandlerUtils {
       linkId = link.getPersistenceId();
     } else {
       try {
-        linkId = Long.valueOf(identifier);
+        linkId = Long.parseLong(identifier);
       } catch (NumberFormatException ex) {
         // this means name nor Id existed and we want to throw a user friendly
         // message than a number format exception
@@ -71,6 +98,33 @@ public class HandlerUtils {
     return linkId;
   }
 
+  public static String getLinkNameFromIdentifier(String identifier) {
+    // support linkName or linkId for the api
+    // NOTE: linkId is a fallback for older sqoop clients if any, since we want
+    // to primarily use unique linkNames
+    Repository repository = RepositoryManager.getInstance().getRepository();
+    MLink link = repository.findLink(identifier);
+    if (link == null) {
+      long linkId;
+      try {
+        linkId = Long.parseLong(identifier);
+      } catch (NumberFormatException ex) {
+        // this means name nor Id existed and we want to throw a user friendly
+        // message than a number format exception
+        throw new SqoopException(ServerError.SERVER_0005, "Invalid link: " + identifier
+            + " requested");
+      }
+
+      link = repository.findLink(linkId);
+      if (link == null) {
+        throw new SqoopException(ServerError.SERVER_0006, "Link: " + identifier
+            + " doesn't exist");
+      }
+    }
+
+    return link.getName();
+  }
+
   public static long getConnectorIdFromIdentifier(String identifier) {
     long connectorId;
     Repository repository = RepositoryManager.getInstance().getRepository();
@@ -79,7 +133,7 @@ public class HandlerUtils {
       connectorId = connector.getPersistenceId();
     } else {
       try {
-        connectorId = Long.valueOf(identifier);
+        connectorId = Long.parseLong(identifier);
       } catch (NumberFormatException ex) {
         // this means name nor Id existed and we want to throw a user friendly
         // message than a number format exception
@@ -90,4 +144,27 @@ public class HandlerUtils {
     return connectorId;
   }
 
+  public static String getConnectorNameFromIdentifier(String identifier) {
+    Repository repository = RepositoryManager.getInstance().getRepository();
+    MConnector connector = repository.findConnector(identifier);
+    if (connector == null) {
+      long connectorId;
+      try {
+        connectorId = Long.parseLong(identifier);
+      } catch (NumberFormatException ex) {
+        // this means name nor Id existed and we want to throw a user friendly
+        // message than a number format exception
+        throw new SqoopException(ServerError.SERVER_0005, "Invalid connector: " + identifier
+            + " requested");
+      }
+
+      connector = repository.findConnector(connectorId);
+      if (connector == null) {
+        throw new SqoopException(ServerError.SERVER_0006, "Connector: " + identifier
+            + " doesn't exist");
+      }
+    }
+
+    return connector.getUniqueName();
+  }
 }

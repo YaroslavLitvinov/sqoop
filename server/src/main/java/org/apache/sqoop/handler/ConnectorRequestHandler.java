@@ -40,6 +40,7 @@ import org.apache.sqoop.server.RequestHandler;
 import org.apache.sqoop.server.common.ServerError;
 
 public class ConnectorRequestHandler implements RequestHandler {
+  private static final long serialVersionUID = 1L;
 
   private static final Logger LOG = Logger.getLogger(ConnectorRequestHandler.class);
 
@@ -89,7 +90,7 @@ public class ConnectorRequestHandler implements RequestHandler {
           ctx.getRequest().getRemoteAddr(), "get", "connector", String.valueOf(cIdentifier));
 
       // Authorization check
-      AuthorizationEngine.readConnector(ctx.getUserName(), String.valueOf(connector.getPersistenceId()));
+      AuthorizationEngine.readConnector(ctx.getUserName(), connector.getUniqueName());
 
       return new ConnectorBean(Arrays.asList(connector), configParamBundles);
     }

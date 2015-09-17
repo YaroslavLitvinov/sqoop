@@ -24,11 +24,13 @@ import org.apache.commons.lang.StringUtils;
 import org.apache.sqoop.common.Direction;
 import org.apache.sqoop.model.InputEditable;
 import org.apache.sqoop.model.MBooleanInput;
+import org.apache.sqoop.model.MDateTimeInput;
 import org.apache.sqoop.model.MLink;
 import org.apache.sqoop.model.MEnumInput;
 import org.apache.sqoop.model.MConfig;
 import org.apache.sqoop.model.MInput;
 import org.apache.sqoop.model.MIntegerInput;
+import org.apache.sqoop.model.MListInput;
 import org.apache.sqoop.model.MLongInput;
 import org.apache.sqoop.model.MMapInput;
 import org.apache.sqoop.model.MJob;
@@ -37,8 +39,10 @@ import org.apache.sqoop.model.MStringInput;
 import org.apache.sqoop.model.MValidatedElement;
 import org.apache.sqoop.validation.Message;
 import org.apache.sqoop.validation.Status;
+import org.joda.time.DateTime;
 
 import java.io.IOException;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.HashMap;
@@ -180,21 +184,111 @@ public final class ConfigFiller {
     // Based on the input type, let's perconfig specific load
     switch (input.getType()) {
     case STRING:
+      assert input instanceof MStringInput;
       return fillInputString(prefix, (MStringInput) input, line);
     case INTEGER:
+      assert input instanceof MIntegerInput;
       return fillInputInteger(prefix, (MIntegerInput) input, line);
     case LONG:
+      assert input instanceof MLongInput;
       return fillInputLong(prefix, (MLongInput) input, line);
     case BOOLEAN:
+      assert input instanceof MBooleanInput;
       return fillInputBoolean(prefix, (MBooleanInput) input, line);
     case MAP:
+      assert input instanceof MMapInput;
       return fillInputMap(prefix, (MMapInput) input, line);
     case ENUM:
+      assert input instanceof MEnumInput;
       return fillInputEnum(prefix, (MEnumInput) input, line);
+    case LIST:
+      assert input instanceof MListInput;
+      return fillInputList(prefix, (MListInput) input, line);
+    case DATETIME:
+      assert input instanceof MDateTimeInput;
+      return fillInputDateTime(prefix, (MDateTimeInput) input, line);
     default:
       println("Unsupported data type " + input.getType());
       return true;
     }
+  }
+
+  /**
+   * Load CLI options for datetime type.
+   *
+   * Supports the following two types of format:
+   * <ul>
+   * <li> ISO8601 format (yyyy-MM-ddTHH:mm:ss.SSSZZ)
+   * <li> Long which represents the milliseconds from 1970-01-01T00:00:00Z
+   * </ul>
+   *
+   * @param prefix placed at the beginning of the CLI option key
+   * @param input Input that we should read or edit
+   * @param line CLI options container
+   * @return
+   * @throws IOException
+   */
+  private static boolean fillInputDateTime(String prefix,
+                                       MDateTimeInput input,
+                                       CommandLine line)
+                                       throws IOException {
+    String opt = ConfigOptions.getOptionKey(prefix, input);
+    if (line.hasOption(opt)) {
+      DateTime dt = parseDateTime(line.getOptionValue(opt));
+      if (dt == null) {
+        errorMessage(input, "Input is not valid DateTime format");
+        return false;
+      }
+      input.setValue(dt);
+    } else {
+      input.setEmpty();
+    }
+    return true;
+  }
+
+  private static DateTime parseDateTime(String value) {
+    DateTime dt = null;
+    try {
+      dt = DateTime.parse(value);
+    } catch (IllegalArgumentException iae) {
+      // value is not valid ISO8601 format
+      try {
+        long a  = Long.parseLong(value);
+        dt = new DateTime(a);
+      } catch (NumberFormatException nfe) {
+        // value is not numeric string
+      }
+    }
+    return dt;
+  }
+
+  /**
+   * Load CLI options for list type.
+   *
+   * Parses elements that take the config "<element1>&<element2>&...".
+   *
+   * @param prefix placed at the beginning of the CLI option key
+   * @param input Input that we should read or edit
+   * @param line CLI options container
+   * @return
+   * @throws IOException
+   */
+  private static boolean fillInputList(String prefix,
+                                       MListInput input,
+                                       CommandLine line)
+                                       throws IOException {
+    String opt = ConfigOptions.getOptionKey(prefix, input);
+    if (line.hasOption(opt)) {
+      String value = line.getOptionValue(opt);
+      List<String> values = new LinkedList<String>();
+      for (String element : value.split("&")) {
+        values.add(element);
+      }
+      input.setValue(values);
+    } else {
+      input.setEmpty();
+    }
+    return true;
   }
 
   /**
@@ -248,10 +342,13 @@ public final class ConfigFiller {
     if (line.hasOption(opt)) {
       String value = line.getOptionValue(opt);
       Map<String, String> values = new HashMap<String, String>();
+      String[] keyValue = null;
       String[] entries = value.split("&");
       for (String entry : entries) {
         if (entry.contains("=")) {
-          String[] keyValue = entry.split("=");
+          keyValue = entry.split("=", 2);
+        }
+        if (keyValue != null && keyValue.length == 2) {
           values.put(keyValue[0], keyValue[1]);
         } else {
           errorMessage(input, "Don't know what to do with " + entry);
@@ -497,9 +594,131 @@ public final class ConfigFiller {
         return fillInputMapWithBundle((MMapInput) input, reader, bundle);
       case ENUM:
         return fillInputEnumWithBundle((MEnumInput) input, reader, bundle);
+      case LIST:
+        return fillInputListWithBundle((MListInput) input, reader, bundle);
+      case DATETIME:
+        return fillInputDateTimeWithBundle((MDateTimeInput) input, reader, bundle);
       default:
         println("Unsupported data type " + input.getType());
         return true;
+    }
+  }
+
+  /**
+   * Load user input for datetime type.
+   *
+   * This implementation supports the following two types of format:
+   * <ul>
+   * <li> ISO8601 format (yyyy-MM-ddTHH:mm:ss.SSSZZ)
+   * <li> Long which represents the milliseconds from 1970-01-01T00:00:00Z
+   * </ul>
+   *
+   * If user did not enter anything (empty input) finish loading and return from function.
+   *
+   * @param input Input that we should read or edit
+   * @param reader Associated console reader
+   * @param bundle Resource bundle
+   * @return True if user wish to continue with loading additional inputs
+   * @throws IOException
+   */
+  private static boolean fillInputDateTimeWithBundle(MDateTimeInput input,
+                                                     ConsoleReader reader,
+                                                     ResourceBundle bundle)
+                                                     throws IOException {
+    generatePrompt(reader, bundle, input);
+
+    if (!input.isEmpty() && !input.isSensitive()) {
+      reader.putString(input.getValue().toString());
+    }
+
+    // Get the data
+    String userTyped;
+    if (input.isSensitive()) {
+      userTyped = reader.readLine('*');
+    } else {
+      userTyped = reader.readLine();
+    }
+
+    if (userTyped == null) {
+      return false;
+    } else if (userTyped.isEmpty()) {
+      input.setEmpty();
+    } else {
+      DateTime dt = parseDateTime(userTyped);
+      if (dt == null) {
+        errorMessage("Input is not a valid DateTime");
+        return fillInputDateTimeWithBundle(input, reader, bundle);
+      }
+
+      input.setValue(dt);
+    }
+
+    return true;
+  }
+
+  /**
+   * Load user input for list type.
+   *
+   * This implementation will load one element at a time. If user did not
+   * enter anything (empty input) finish loading and return from function.
+   *
+   * @param input Input that we should read or edit
+   * @param reader Associated console reader
+   * @param bundle Resource bundle
+   * @return True if user wish to continue with loading additional inputs
+   * @throws IOException
+   */
+  private static boolean fillInputListWithBundle(MListInput input,
+                                       ConsoleReader reader,
+                                       ResourceBundle bundle)
+                                       throws IOException {
+    // Special prompt in List case
+    println(bundle.getString(input.getLabelKey()) + ": ");
+
+    // Internal loading list
+    List<String> values = input.getValue();
+    if(values == null) {
+      values = new LinkedList<String>();
+    }
+
+    String userTyped;
+
+    while(true) {
+      // Print all current items in each iteration
+      // However do not printout if this input contains sensitive information.
+      println("There are currently " + values.size() + " values in the list:");
+      if (!input.isSensitive()) {
+        for(String value : values) {
+          println(value);
+        }
+      }
+
+      // Special prompt for List element
+      reader.printString("element# ");
+      reader.flushConsole();
+
+      if(input.isSensitive()) {
+        userTyped = reader.readLine('*');
+      } else {
+        userTyped = reader.readLine();
+      }
+
+      if(userTyped == null) {
+        // Finish loading and return back to Sqoop shell
+        return false;
+      } else if(userTyped.isEmpty()) {
+        // User has finished loading data to List input, either set input empty
+        // if there are no elements or propagate elements to the input
+        if(values.size() == 0) {
+          input.setEmpty();
+        } else {
+          input.setValue(values);
+        }
+        return true;
+      } else {
+        values.add(userTyped);
+      }
+
     }
   }
 
@@ -649,7 +868,11 @@ public final class ConfigFiller {
         // try to remove entry that user specified.
         if(userTyped.contains("=")) {
           String []keyValue = userTyped.split("=", 2);
-          values.put(handleUserInput(keyValue[0]), handleUserInput(keyValue[1]));
+          if (keyValue.length == 2) {
+            values.put(handleUserInput(keyValue[0]), handleUserInput(keyValue[1]));
+          } else {
+            errorMessage("Don't know what to do with " + userTyped);
+          }
         } else {
           String key = handleUserInput(userTyped);
           if(values.containsKey(key)) {
@@ -882,7 +1105,13 @@ public final class ConfigFiller {
       nameInput.setValue(name);
     }
 
-    fillInputStringWithBundle(nameInput, reader, getResourceBundle());
+    do {
+      fillInputStringWithBundle(nameInput, reader, getResourceBundle());
+      if (StringUtils.isEmpty(nameInput.getValue())) {
+        errorMessage(nameInput, "Job name or link name cannot be null");
+        continue;
+      }
+    } while (false);
 
     return nameInput.getValue();
   }

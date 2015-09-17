@@ -33,6 +33,7 @@ import org.apache.sqoop.server.RequestHandler;
 import org.apache.sqoop.server.common.ServerError;
 
 public class SubmissionRequestHandler implements RequestHandler {
+  private static final long serialVersionUID = 1L;
 
   private static final Logger LOG = Logger.getLogger(SubmissionRequestHandler.class);
 
@@ -48,15 +49,13 @@ public class SubmissionRequestHandler implements RequestHandler {
       throw new SqoopException(ServerError.SERVER_0002, "Unsupported HTTP method for connector:"
           + ctx.getMethod());
     }
-    String jobIdentifier = ctx.getLastURLElement();
     // submissions per job are ordered by update time
     // hence the latest submission is on the top
     if (ctx.getParameterValue(JOB_NAME_QUERY_PARAM) != null) {
-      jobIdentifier = ctx.getParameterValue(JOB_NAME_QUERY_PARAM);
+      String jobIdentifier = ctx.getParameterValue(JOB_NAME_QUERY_PARAM);
       AuditLoggerManager.getInstance().logAuditEvent(ctx.getUserName(),
           ctx.getRequest().getRemoteAddr(), "get", "submissionsByJob", jobIdentifier);
-        long jobId = HandlerUtils.getJobIdFromIdentifier(jobIdentifier);
-        return getSubmissionsForJob(jobId, ctx);
+        return getSubmissionsForJob(jobIdentifier, ctx);
     } else {
       // all submissions in the system
       AuditLoggerManager.getInstance().logAuditEvent(ctx.getUserName(),
@@ -75,12 +74,15 @@ public class SubmissionRequestHandler implements RequestHandler {
     return new SubmissionsBean(submissions);
   }
 
-  private JsonBean getSubmissionsForJob(long jid, RequestContext ctx) {
+  private JsonBean getSubmissionsForJob(String jobIdentifier, RequestContext ctx) {
+    long jobId = HandlerUtils.getJobIdFromIdentifier(jobIdentifier);
+    String jobName = HandlerUtils.getJobNameFromIdentifier(jobIdentifier);
+
     //Authorization check
-    AuthorizationEngine.statusJob(ctx.getUserName(), String.valueOf(jid));
+    AuthorizationEngine.statusJob(ctx.getUserName(), jobName);
 
     List<MSubmission> submissions = RepositoryManager.getInstance().getRepository()
-        .findSubmissionsForJob(jid);
+        .findSubmissionsForJob(jobId);
 
     return new SubmissionsBean(submissions);
   }

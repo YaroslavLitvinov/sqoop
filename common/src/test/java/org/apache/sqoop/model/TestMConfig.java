@@ -74,6 +74,8 @@ public class TestMConfig {
         StringUtils.EMPTY, (short) 3);
     MEnumInput enumInput = new MEnumInput("Config.D", false, InputEditable.ANY, StringUtils.EMPTY,
         new String[] { "I", "V" });
+    MListInput listInput = new MListInput("Config.E", false, InputEditable.ANY, StringUtils.EMPTY );
+    MDateTimeInput dtInput = new MDateTimeInput("Config.F", false, InputEditable.ANY, StringUtils.EMPTY );
 
     List<MInput<?>> inputs = new ArrayList<MInput<?>>();
     inputs.add(intInput);
@@ -81,6 +83,8 @@ public class TestMConfig {
     inputs.add(mapInput);
     inputs.add(stringInput);
     inputs.add(enumInput);
+    inputs.add(listInput);
+    inputs.add(dtInput);
 
     MConfig config = new MConfig("Config", inputs);
     assertEquals(intInput, config.getIntegerInput("Config.A"));
@@ -88,5 +92,7 @@ public class TestMConfig {
     assertEquals(mapInput, config.getMapInput("Config.B"));
     assertEquals(stringInput, config.getStringInput("Config.C"));
     assertEquals(enumInput, config.getEnumInput("Config.D"));
+    assertEquals(listInput, config.getListInput("Config.E"));
+    assertEquals(dtInput, config.getDateTimeInput("Config.F"));
   }
 }

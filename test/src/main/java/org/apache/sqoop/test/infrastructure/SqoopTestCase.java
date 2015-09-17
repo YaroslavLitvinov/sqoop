@@ -40,6 +40,7 @@ import org.apache.sqoop.test.infrastructure.providers.HadoopInfrastructureProvid
 import org.apache.sqoop.test.infrastructure.providers.InfrastructureProvider;
 import org.apache.sqoop.test.infrastructure.providers.SqoopInfrastructureProvider;
 import org.apache.sqoop.test.utils.HdfsUtils;
+import org.apache.sqoop.test.utils.SqoopUtils;
 import org.apache.sqoop.validation.Status;
 import org.testng.ITest;
 import org.testng.ITestContext;
@@ -74,7 +75,7 @@ public class SqoopTestCase implements ITest {
   /**
    * Default submission callbacks that are printing various status about the submission.
    */
-  protected static SubmissionCallback DEFAULT_SUBMISSION_CALLBACKS = new SubmissionCallback() {
+  protected static final SubmissionCallback DEFAULT_SUBMISSION_CALLBACKS = new SubmissionCallback() {
     @Override
     public void submitted(MSubmission submission) {
       LOG.info("Submission submitted: " + submission);
@@ -330,6 +331,7 @@ public class SqoopTestCase implements ITest {
    * @param link
    */
   public void saveLink(MLink link) {
+    SqoopUtils.fillObjectName(link);
     assertEquals(Status.OK, getClient().saveLink(link));
     assertNotSame(MPersistableEntity.PERSISTANCE_ID_DEFAULT, link.getPersistenceId());
   }
@@ -340,6 +342,7 @@ public class SqoopTestCase implements ITest {
    * @param job
    */
   public void saveJob(MJob job) {
+    SqoopUtils.fillObjectName(job);
     assertEquals(Status.OK, getClient().saveJob(job));
     assertNotSame(MPersistableEntity.PERSISTANCE_ID_DEFAULT, job.getPersistenceId());
   }

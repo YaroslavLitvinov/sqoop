@@ -98,6 +98,14 @@ public final class MConfig extends MValidatedElement implements MClonable {
     return (MMapInput)getInput(inputName);
   }
 
+  public MListInput getListInput(String inputName) {
+    return (MListInput)getInput(inputName);
+  }
+
+  public MDateTimeInput getDateTimeInput(String inputName) {
+    return (MDateTimeInput)getInput(inputName);
+  }
+
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder("config-").append(getName());

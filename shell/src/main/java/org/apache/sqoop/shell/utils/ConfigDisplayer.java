@@ -33,6 +33,7 @@ import org.apache.sqoop.model.MAccountableEntity;
 import org.apache.sqoop.model.MBooleanInput;
 import org.apache.sqoop.model.MConfig;
 import org.apache.sqoop.model.MConnector;
+import org.apache.sqoop.model.MDateTimeInput;
 import org.apache.sqoop.model.MDriverConfig;
 import org.apache.sqoop.model.MEnumInput;
 import org.apache.sqoop.model.MInput;
@@ -40,6 +41,7 @@ import org.apache.sqoop.model.MInputType;
 import org.apache.sqoop.model.MIntegerInput;
 import org.apache.sqoop.model.MJob;
 import org.apache.sqoop.model.MLink;
+import org.apache.sqoop.model.MListInput;
 import org.apache.sqoop.model.MLongInput;
 import org.apache.sqoop.model.MMapInput;
 import org.apache.sqoop.model.MStringInput;
@@ -202,6 +204,12 @@ public final class ConfigDisplayer {
             case ENUM:
               displayInputEnum((MEnumInput) input);
               break;
+            case LIST:
+              displayInputList((MListInput) input);
+              break;
+            case DATETIME:
+              displayInputDateTime((MDateTimeInput) input);
+              break;
             default:
               print("\n%s " + input.getType(), resourceString(Constants.RES_CONFIG_DISPLAYER_UNSUPPORTED_DATATYPE));
               return;
@@ -269,6 +277,28 @@ public final class ConfigDisplayer {
    * @param input Enum input
    */
   private static void displayInputEnum(MEnumInput input) {
+    print(input.getValue());
+  }
+
+  /**
+   * Display content of List input
+   *
+   * @param input List input
+   */
+  private static void displayInputList(MListInput input) {
+    for (String element : input.getValue()) {
+      println();
+      print("      ");
+      print(element);
+    }
+  }
+
+  /**
+   * Display content of DateTime input
+   *
+   * @param input DateTime input
+   */
+  private static void displayInputDateTime(MDateTimeInput input) {
     print(input.getValue());
   }
 

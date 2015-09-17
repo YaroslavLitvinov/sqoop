@@ -61,6 +61,8 @@ import org.apache.sqoop.repository.derby.upgrade.UniqueJobRename;
  *
  * Repository implementation for Derby database.
  */
+@edu.umd.cs.findbugs.annotations.SuppressWarnings({
+        "SQL_PREPARED_STATEMENT_GENERATED_FROM_NONCONSTANT_STRING", "SQL_NONCONSTANT_STRING_PASSED_TO_EXECUTE"})
 public class DerbyRepositoryHandler extends CommonRepositoryHandler {
 
   private static final Logger LOG =
@@ -310,6 +312,12 @@ public class DerbyRepositoryHandler extends CommonRepositoryHandler {
       runQuery(QUERY_CREATE_TABLE_SQ_CONTEXT_TYPE, conn);
       runQuery(QUERY_CREATE_TABLE_SQ_CONTEXT_PROPERTY, conn);
       runQuery(QUERY_CREATE_TABLE_SQ_CONTEXT, conn);
+
+      runQuery(QUERY_UPGRADE_TABLE_SQ_LINK_UPDATE_COLUMN_SQ_LINK_NAME, conn);
+      runQuery(QUERY_UPGRADE_TABLE_SQ_LINK_ALTER_COLUMN_SQ_LINK_NAME_NOT_NULL, conn);
+      runQuery(QUERY_UPGRADE_TABLE_SQ_JOB_UPDATE_COLUMN_SQB_NAME, conn);
+      runQuery(QUERY_UPGRADE_TABLE_SQ_JOB_ALTER_COLUMN_SQB_NAME_NOT_NULL, conn);
+      runQuery(QUERY_UPGRADE_TABLE_SQ_CONFIGURABLE_ALTER_COLUMN_SQB_NAME_NOT_NULL, conn);
     }
 
     // last step upgrade the repository version to the latest value in the code

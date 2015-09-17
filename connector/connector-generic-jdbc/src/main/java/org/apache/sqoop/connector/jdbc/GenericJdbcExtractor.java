@@ -63,6 +63,7 @@ public class GenericJdbcExtractor extends Extractor<LinkConfiguration, FromJobCo
       if (schemaColumns.length != columnCount) {
         throw new SqoopException(GenericJdbcConnectorError.GENERIC_JDBC_CONNECTOR_0021, schemaColumns.length + ":" + columnCount);
       }
+      Logger LOG = Logger.getLogger(GenericJdbcExtractor.class);
       while (resultSet.next()) {
         Object[] array = new Object[columnCount];
         for (int i = 0; i < columnCount; i++) {
@@ -86,6 +87,7 @@ public class GenericJdbcExtractor extends Extractor<LinkConfiguration, FromJobCo
               array[i] = LocalTime.fromDateFields((java.sql.Time)resultSet.getObject(i + 1));
               break;
             case ARRAY:
+              LOG.info("case ARRAY '" + resultSet.getObject(i + 1) + ", column:  " + schemaColumn.getName());
               // use getArray() to get Object[] from java.sql.Array data type
               java.sql.Array objArray = (java.sql.Array) resultSet.getObject(i + 1);
               array[i] = objArray.getArray();
@@ -97,10 +99,15 @@ public class GenericJdbcExtractor extends Extractor<LinkConfiguration, FromJobCo
                 Blob blob = (Blob) array[i];
                 array[i] = blob.getBytes(1, (int) blob.length());
               }
+              else{
+                LOG.warn("case BINARY '" + resultSet.getObject(i + 1) + ", column:  " + schemaColumn.getName());
+              }
+              break;
             default:
               //for anything else
               array[i] = resultSet.getObject(i + 1);
-
+              LOG.info("case default '" + resultSet.getObject(i + 1) + ", column:  " + schemaColumn.getName());
+              break;
           }
         }
         context.getDataWriter().writeArrayRecord(array);

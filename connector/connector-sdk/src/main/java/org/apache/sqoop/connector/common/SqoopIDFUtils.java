@@ -17,6 +17,7 @@
  */
 package org.apache.sqoop.connector.common;
 
+import org.apache.log4j.Logger;
 import org.apache.sqoop.classification.InterfaceAudience;
 import org.apache.sqoop.classification.InterfaceStability;
 import org.apache.sqoop.common.SqoopException;
@@ -50,6 +51,8 @@ import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.Collections;
+
+import java.sql.ResultSet;
 
 /**
  * Utility methods for connectors to encode data into the sqoop expected formats
@@ -593,6 +596,16 @@ public class SqoopIDFUtils {
         switch (columns[i].getType()) {
           case ARRAY:
           case SET:
+            Logger LOG = Logger.getLogger(SqoopIDFUtils.class);
+            Object obj = objectArray[i];
+            try {
+              Object objarr[] = (Object[]) objectArray[i];
+            }
+            catch (java.lang.ClassCastException e) {
+              LOG.warn("exception: '" + e + ", column:  " + columns[i].getName());
+              throw e;
+            }
+            LOG.info("OK, column:  " + columns[i].getName());
             csvString.append(toCSVList((Object[]) objectArray[i], (AbstractComplexListType) columns[i]));
             break;
           case MAP:

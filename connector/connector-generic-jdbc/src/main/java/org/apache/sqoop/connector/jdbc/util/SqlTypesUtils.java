@@ -98,6 +98,9 @@ public class SqlTypesUtils {
       case Types.ARRAY:
         return new Array(columnName, new Bit(columnName));
 
+      case Types.OTHER:
+        return new Text(columnName);
+
       default:
         return new Unknown(columnName,(long)sqlType);
     }
